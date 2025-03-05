@@ -6,10 +6,11 @@ import ping from './commands/ping';
 import stun from './commands/stun';
 import unstun from './commands/unstun';
 import owoify from './commands/owoify';
+import { CONFIG } from './config';
 
 // Load environment variables
-const TOKEN = process.env.TOKEN!;
-const CLIENT_ID = process.env.CLIENT_ID!;
+const BOT_TOKEN = CONFIG.BOT_TOKEN!;
+const BOT_ID = CONFIG.BOT_ID!;
 
 // Create a more flexible Command interface to handle different interaction types
 interface Command {
@@ -49,11 +50,11 @@ async function main() {
   }
 
   // Register slash commands with Discord
-  const rest = new REST().setToken(TOKEN);
+  const rest = new REST().setToken(BOT_TOKEN);
   try {
     console.log('Started refreshing application commands.');
     await rest.put(
-      Routes.applicationCommands(CLIENT_ID),
+      Routes.applicationCommands(BOT_ID),
       { body: commandList.map(cmd => cmd.data.toJSON()) }
     );
     console.log('Successfully reloaded application commands.');
@@ -98,7 +99,7 @@ async function main() {
     console.log(`Ready! Logged in as ${c.user.tag}`);
   });
 
-  await client.login(TOKEN);
+  await client.login(BOT_TOKEN);
 }
 
 main().catch(console.error);
