@@ -1,13 +1,22 @@
 import 'dotenv/config';
-import { Client, Collection, Events, GatewayIntentBits, REST, Routes, ChatInputCommandInteraction, MessageContextMenuCommandInteraction, Interaction } from 'discord.js';
+import {
+  Client,
+  Collection,
+  Events,
+  GatewayIntentBits,
+  REST,
+  Routes,
+  Interaction,
+  ChatInputCommandInteraction,
+  MessageContextMenuCommandInteraction
+} from 'discord.js';
 
 // Import commands explicitly
 import ping from './commands/ping';
 import stun from './commands/stun';
 import unstun from './commands/unstun';
 import owoify from './commands/owoify';
-import verify from './commands/verify'
-
+import verify from './commands/verify';
 import { CONFIG } from './config';
 
 // Load environment variables
@@ -26,6 +35,7 @@ interface Command {
 }
 
 async function main() {
+  // Create client instance
   const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
@@ -61,7 +71,7 @@ async function main() {
     );
     console.log('Successfully reloaded application commands.');
   } catch (error) {
-    console.error(error);
+    console.error('Error refreshing application commands:', error);
   }
 
   // Handle all types of interactions
@@ -86,14 +96,30 @@ async function main() {
       await command.execute(interaction);
     } catch (error) {
       console.error(`Error executing ${interaction.commandName}:`, error);
-      const response = { content: 'There was an error executing this command!', ephemeral: true };
 
-      if (interaction.replied || interaction.deferred) {
-        await interaction.followUp(response);
-      } else {
-        await interaction.reply(response);
+      try {
+        if (interaction.replied) {
+          await interaction.followUp({
+            content: 'There was an error executing this command!',
+            ephemeral: true
+          });
+        } else if (interaction.deferred) {
+          await interaction.editReply('There was an error executing this command!');
+        } else {
+          await interaction.reply({
+            content: 'There was an error executing this command!',
+            ephemeral: true
+          });
+        }
+      } catch (replyError) {
+        console.error('Failed to respond to interaction after error:', replyError);
       }
     }
+  });
+
+  // Handle process errors to prevent crashes
+  process.on('unhandledRejection', (error) => {
+    console.error('Unhandled promise rejection:', error);
   });
 
   // Log in to Discord
@@ -104,4 +130,6 @@ async function main() {
   await client.login(BOT_TOKEN);
 }
 
-main().catch(console.error);
+main().catch(error => {
+  console.error('Fatal error in main process:', error);
+});
