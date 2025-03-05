@@ -6,6 +6,8 @@ import ping from './commands/ping';
 import stun from './commands/stun';
 import unstun from './commands/unstun';
 import owoify from './commands/owoify';
+import verify from './commands/verify'
+
 import { CONFIG } from './config';
 
 // Load environment variables
@@ -37,7 +39,7 @@ async function main() {
   const commands = new Collection<string, Command>();
 
   // Create commands array
-  const commandList = [ping, stun, unstun, owoify];
+  const commandList = [ping, stun, unstun, owoify, verify];
 
   // Register all commands
   for (const command of commandList) {
