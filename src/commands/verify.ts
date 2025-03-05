@@ -9,6 +9,9 @@ export default {
     ),
 
   async execute(interaction: ChatInputCommandInteraction) {
+    // Immediately defer the reply to prevent interaction timeout
+    await interaction.deferReply({ ephemeral: true });
+
     try {
       const target = interaction.options.getUser('user')!;
       const guild = interaction.guild!;
@@ -19,9 +22,8 @@ export default {
         role.name.toLowerCase() === 'verificator');
 
       if (!hasVerificatorRole) {
-        return interaction.reply({
-          content: 'You do not have the verificator role required to use this command.',
-          flags: MessageFlags.Ephemeral
+        return interaction.editReply({
+          content: 'You do not have the verificator role required to use this command.'
         });
       }
 
@@ -29,23 +31,22 @@ export default {
       const result = await this.verifyUser(guild, target.id);
 
       if (result === 'already_verified') {
-        return interaction.reply({
-          content: `${target.username} is already verified.`,
-          flags: MessageFlags.Ephemeral
+        return interaction.editReply({
+          content: `${target.username} is already verified.`
         });
       } else if (result === 'success') {
-        return interaction.reply(`${interaction.user.username} granted vegan role to ${target.username}`);
+        // For success message, we want it to be public
+        await interaction.deleteReply(); // Delete the deferred ephemeral message
+        return interaction.followUp(`${interaction.user.username} granted vegan role to ${target.username}`);
       } else {
-        return interaction.reply({
-          content: 'Failed to verify user (role not found or other error).',
-          flags: MessageFlags.Ephemeral
+        return interaction.editReply({
+          content: 'Failed to verify user (role not found or other error).'
         });
       }
     } catch (error) {
       console.error(error);
-      return interaction.reply({
-        content: 'An error occurred while verifying the user.',
-        flags: MessageFlags.Ephemeral
+      return interaction.editReply({
+        content: 'An error occurred while verifying the user.'
       });
     }
   },
@@ -60,7 +61,6 @@ export default {
       // Find vegan role
       const veganRole = guild.roles.cache.find((role: Role) =>
         role.name.toLowerCase() === 'vegan');
-
       if (!veganRole) return 'failed';
 
       // Check if user already has the vegan role
