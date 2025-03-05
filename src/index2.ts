@@ -7,19 +7,14 @@ import {
   REST,
   Routes,
   Interaction,
-  ChatInputCommandInteraction,
-  MessageContextMenuCommandInteraction
 } from 'discord.js';
 
 // Import commands explicitly
 import ping from './commands/ping';
-import stun from './commands/stun';
-import unstun from './commands/unstun';
 import owoify from './commands/owoify';
 import verify from './commands/verify';
 import renameChannel from './commands/rename-channel';
 import { CONFIG } from './config';
-import renameCategory from './commands/rename-category';
 
 // Load environment variables
 const BOT_TOKEN = CONFIG.BOT_TOKEN!;
@@ -51,7 +46,7 @@ async function main() {
   const commands = new Collection<string, Command>();
 
   // Create commands array
-  const commandList = [ping, owoify, verify, renameChannel, renameCategory];
+  const commandList = [ping, owoify, verify, renameChannel];
 
   // Register all commands
   for (const command of commandList) {
@@ -135,3 +130,4 @@ async function main() {
 main().catch(error => {
   console.error('Fatal error in main process:', error);
 });
+
