@@ -13,13 +13,14 @@ import {
 
 // Import commands explicitly
 import ping from './commands/ping';
-import stun from './commands/stun';
-import unstun from './commands/unstun';
 import owoify from './commands/owoify';
 import verify from './commands/verify';
 import renameChannel from './commands/rename-channel';
 import { CONFIG } from './config';
 import renameCategory from './commands/rename-category';
+import nonVegan from './commands/non-vegan';
+import isolate from './commands/isolate';
+import release from './commands/release';
 
 // Load environment variables
 const BOT_TOKEN = CONFIG.BOT_TOKEN!;
@@ -51,7 +52,7 @@ async function main() {
   const commands = new Collection<string, Command>();
 
   // Create commands array
-  const commandList = [ping, owoify, verify, renameChannel, renameCategory];
+  const commandList = [ping, owoify, verify, renameChannel, renameCategory, nonVegan, isolate, release];
 
   // Register all commands
   for (const command of commandList) {
