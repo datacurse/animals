@@ -2,7 +2,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, Guild, Role, GuildMem
 
 export default {
   data: new SlashCommandBuilder()
-    .setName('non vegan')
+    .setName('non-vegan')
     .setDescription('Gives non-vegan role to a user')
     .addUserOption(option =>
       option.setName('user').setDescription('User to mark as non-vegan').setRequired(true)
