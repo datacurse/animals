@@ -2,7 +2,7 @@ import { SlashCommandBuilder, ChatInputCommandInteraction, Guild, Role, GuildMem
 
 export default {
   data: new SlashCommandBuilder()
-    .setName('non-vegan')
+    .setName('non vegan')
     .setDescription('Gives non-vegan role to a user')
     .addUserOption(option =>
       option.setName('user').setDescription('User to mark as non-vegan').setRequired(true)
@@ -59,7 +59,7 @@ export default {
 
       // Find non-vegan role
       const nonVeganRole = guild.roles.cache.find((role: Role) =>
-        role.name.toLowerCase() === 'non-vegan');
+        role.name.toLowerCase() === 'non vegan');
       if (!nonVeganRole) return 'failed';
 
       // Check if user already has the non-vegan role
