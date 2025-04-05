@@ -21,10 +21,11 @@ import renameCategory from './commands/rename-category';
 import nonVegan from './commands/non-vegan';
 import isolate from './commands/isolate';
 import release from './commands/release';
+import tapify from './commands/tapify'
 
 // Load environment variables
-const BOT_TOKEN = CONFIG.BOT_TOKEN!;
-const BOT_ID = CONFIG.BOT_ID!;
+const TOKEN = CONFIG.TOKEN!;
+const APP_ID = CONFIG.APP_ID!;
 
 // Create a more flexible Command interface to handle different interaction types
 interface Command {
@@ -52,7 +53,7 @@ async function main() {
   const commands = new Collection<string, Command>();
 
   // Create commands array
-  const commandList = [ping, owoify, verify, renameChannel, renameCategory, nonVegan, isolate, release];
+  const commandList = [ping, owoify, verify, renameChannel, renameCategory, nonVegan, isolate, release, tapify];
 
   // Register all commands
   for (const command of commandList) {
@@ -65,11 +66,11 @@ async function main() {
   }
 
   // Register slash commands with Discord
-  const rest = new REST().setToken(BOT_TOKEN);
+  const rest = new REST().setToken(TOKEN);
   try {
     console.log('Started refreshing application commands.');
     await rest.put(
-      Routes.applicationCommands(BOT_ID),
+      Routes.applicationCommands(APP_ID),
       { body: commandList.map(cmd => cmd.data.toJSON()) }
     );
     console.log('Successfully reloaded application commands.');
@@ -130,7 +131,7 @@ async function main() {
     console.log(`Ready! Logged in as ${c.user.tag}`);
   });
 
-  await client.login(BOT_TOKEN);
+  await client.login(TOKEN);
 }
 
 main().catch(error => {
