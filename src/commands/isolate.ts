@@ -127,13 +127,27 @@ export default {
         .filter(role => role.id !== guild.id)
         .map(role => role.id);
         
+      // Find non-vegan role if it exists
+      const nonVeganRole = guild.roles.cache.find(role => 
+        role.name.toLowerCase().includes('non-vegan'));
+        
+      // Log roles being removed  
       console.log(`Removing ${roles.length} roles from user ${userId}`);
+      if (nonVeganRole) {
+        console.log(`Will ensure non-vegan role is removed from user ${userId}`);
+      }
       
-      // Add the isolated role first, then remove the others
+      // Add the isolated role first
       await member.roles.add(isolatedRole);
       
+      // Remove all other roles
       if (roles.length > 0) {
         await member.roles.remove(roles);
+      }
+      
+      // Ensure non-vegan role is removed, even if it was added after our initial check
+      if (nonVeganRole) {
+        await member.roles.remove(nonVeganRole.id);
       }
       
       return true;
