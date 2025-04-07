@@ -1,4 +1,4 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, Guild, Role, GuildMember } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, Guild, GuildMember } from 'discord.js';
 
 export default {
   data: new SlashCommandBuilder()
@@ -10,28 +10,76 @@ export default {
 
   async execute(interaction: ChatInputCommandInteraction) {
     try {
-      // Use deferReply to handle potential delays
-      await interaction.deferReply();
-
-      const target = interaction.options.getUser('user')!;
-      const guild = interaction.guild!;
-
+      // Use deferReply to handle potential delays - make it ephemeral for errors
+      await interaction.deferReply({ ephemeral: true });
+      
+      const target = interaction.options.getUser('user');
+      const guild = interaction.guild;
+      
+      // Validate basic requirements
+      if (!target) {
+        return interaction.editReply({ content: 'Error: Target user not found.' });
+      }
+      
+      if (!guild) {
+        return interaction.editReply({ content: 'Error: Command must be used in a guild.' });
+      }
+      
       // Bot revenge case
       if (target.id === interaction.client.user!.id) {
         const success = await this.isolateUser(guild, interaction.user.id);
-        return interaction.editReply(success
-          ? `You tried to isolate me, but I isolated YOU instead, ${interaction.user.username}!`
-          : 'You got lucky this time!');
+        // Make this public since it's a fun response, not an error
+        return interaction.editReply({
+          content: success
+            ? `You tried to isolate me, but I isolated YOU instead, ${interaction.user.username}!`
+            : 'You got lucky this time!',
+          ephemeral: false // Make this visible to everyone
+        });
       }
-
-      // Normal isolate case
+      
+      // Get target member
+      const targetMember = await guild.members.fetch(target.id).catch(error => {
+        console.error(`Failed to fetch member ${target.id}:`, error);
+        return null;
+      });
+      
+      if (!targetMember) {
+        return interaction.editReply({
+          content: `Error: Could not find ${target.username} in this server.`
+        });
+      }
+      
+      // Check if the user has the vegan role
+      const hasVeganRole = targetMember.roles.cache.some(role => {
+        return role.name.toLowerCase().includes('vegan') && 
+               !role.name.toLowerCase().includes('non') && 
+               !role.name.toLowerCase().includes('anti');
+      });
+      
+      if (hasVeganRole) {
+        return interaction.editReply({
+          content: `Cannot isolate ${target.username} because they have the vegan role. The isolate command doesn't work on vegans.`
+        });
+      }
+      
+      // Normal isolate case - successful isolation should be public
       const success = await this.isolateUser(guild, target.id);
-      return interaction.editReply(success
-        ? `${target.username} has been isolated.`
-        : 'Failed to isolate user (already isolated or missing role).');
+      
+      // For successful isolation, make the message public
+      if (success) {
+        return interaction.editReply({
+          content: `${target.username} has been isolated.`,
+          ephemeral: false // Make successful actions visible to everyone
+        });
+      } else {
+        return interaction.editReply({
+          content: 'Failed to isolate user (already isolated or missing role).'
+          // Keeps the ephemeral: true from deferReply
+        });
+      }
+        
     } catch (error) {
       console.error('Error executing isolate command:', error);
-
       // Handle reply based on interaction state
       try {
         if (interaction.deferred) {
@@ -52,30 +100,42 @@ export default {
   async isolateUser(guild: Guild, userId: string): Promise<boolean> {
     try {
       // Get the member
-      const member = await guild.members.fetch(userId).catch(() => null);
+      const member = await guild.members.fetch(userId).catch(error => {
+        console.error(`Failed to fetch member ${userId}:`, error);
+        return null;
+      });
+      
       if (!member) return false;
-
-      // Find isolated role
-      const isolatedRole = guild.roles.cache.find((role: Role) => role.name.toLowerCase() === 'isolated');
-      if (!isolatedRole) return false;
-
+      
+      // Find isolated role using includes instead of exact match
+      const isolatedRole = guild.roles.cache.find(role => 
+        role.name.toLowerCase().includes('isolated'));
+        
+      if (!isolatedRole) {
+        console.error('Isolated role not found');
+        return false;
+      }
+      
       // Check if user already has the isolated role
-      if (member.roles.cache.has(isolatedRole.id)) return false;
-
+      if (member.roles.cache.has(isolatedRole.id)) {
+        console.log(`User ${userId} is already isolated`);
+        return false;
+      }
+      
       // Store original roles in a property on the member object
       const roles = member.roles.cache
-        .filter((role: Role) => role.id !== guild.id)
-        .map((role: Role) => role.id);
-
-      // Store the roles in a property on the user object for later retrieval
-      (member as any)._previousRoles = roles;
-
+        .filter(role => role.id !== guild.id)
+        .map(role => role.id);
+        
+      console.log(`Removing ${roles.length} roles from user ${userId}`);
+      
       // Add the isolated role first, then remove the others
       await member.roles.add(isolatedRole);
+      
       if (roles.length > 0) {
         await member.roles.remove(roles);
       }
-
+      
       return true;
     } catch (error) {
       console.error('Error in isolateUser function:', error);
