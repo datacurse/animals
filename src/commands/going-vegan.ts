@@ -7,12 +7,12 @@ import { CONFIG } from '../config';
 
 export default {
   data: new SlashCommandBuilder()
-    .setName('vegan')
-    .setDescription('Gives vegan role to a user')
+    .setName('going-vegan')
+    .setDescription('Gives going vegan role to a user')
     .addUserOption(opt =>
       opt
         .setName('user')
-        .setDescription('User to verify as vegan')
+        .setDescription('User to verify as going vegan')
         .setRequired(true)
     ),
 
@@ -41,31 +41,31 @@ export default {
       return interaction.editReply(`❌ Couldn't find ${target} here.`);
     }
 
-    // Find vegan role
-    const veganRole = guild.roles.cache.find(r => r.name.toLowerCase() === 'vegan');
-    if (!veganRole) {
-      return interaction.editReply('❌ No role named "vegan" found. Please create it first.');
+    // Find going vegan role
+    const goingVeganRole = guild.roles.cache.find(r => r.name.toLowerCase() === 'going vegan');
+    if (!goingVeganRole) {
+      return interaction.editReply('❌ No role named "animal abuser" found. Please create it first.');
     }
 
-    // Already vegan?
-    if (targetMember.roles.cache.has(veganRole.id)) {
-      return interaction.editReply(`✅ ${targetMember} is already vegan.`);
+    // Already animal abuser?
+    if (targetMember.roles.cache.has(goingVeganRole.id)) {
+      return interaction.editReply(`✅ ${targetMember} is already going vegan.`);
     }
 
     try {
       // Remove conflicting roles
-      const removals = ['animal abuser', 'going vegan']
+      const removals = ['animal abuser', 'vegan']
         .map(name => guild.roles.cache.find(r => r.name.toLowerCase() === name))
         .filter(r => r && targetMember.roles.cache.has(r.id))
         .map(r => targetMember.roles.remove(r!));
       await Promise.all(removals);
 
-      // Add vegan role
-      await targetMember.roles.add(veganRole);
+      // Add going vegan role
+      await targetMember.roles.add(goingVeganRole);
 
       // 2) Replace the deferred “thinking…” with a **public** message
       return interaction.editReply({
-        content: `🌱 ${targetMember} was blessed with the **vegan** role!`
+        content: `🌱 ${targetMember} was blessed with the **going vegan** role!`
       });
     } catch (error) {
       console.error('Role update failed:', error);
@@ -75,4 +75,6 @@ export default {
     }
   },
 };
+
+
 

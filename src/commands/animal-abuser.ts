@@ -7,12 +7,12 @@ import { CONFIG } from '../config';
 
 export default {
   data: new SlashCommandBuilder()
-    .setName('vegan')
-    .setDescription('Gives vegan role to a user')
+    .setName('animal-abuser')
+    .setDescription('Gives animal abuser role to a user')
     .addUserOption(opt =>
       opt
         .setName('user')
-        .setDescription('User to verify as vegan')
+        .setDescription('User to verify as animal abuser')
         .setRequired(true)
     ),
 
@@ -41,15 +41,15 @@ export default {
       return interaction.editReply(`❌ Couldn't find ${target} here.`);
     }
 
-    // Find vegan role
-    const veganRole = guild.roles.cache.find(r => r.name.toLowerCase() === 'vegan');
-    if (!veganRole) {
-      return interaction.editReply('❌ No role named "vegan" found. Please create it first.');
+    // Find animal abuser role
+    const animalAbuserRole = guild.roles.cache.find(r => r.name.toLowerCase() === 'animal abuser');
+    if (!animalAbuserRole) {
+      return interaction.editReply('❌ No role named "animal abuser" found. Please create it first.');
     }
 
-    // Already vegan?
-    if (targetMember.roles.cache.has(veganRole.id)) {
-      return interaction.editReply(`✅ ${targetMember} is already vegan.`);
+    // Already animal abuser?
+    if (targetMember.roles.cache.has(animalAbuserRole.id)) {
+      return interaction.editReply(`✅ ${targetMember} is already animal abuser.`);
     }
 
     try {
@@ -60,12 +60,12 @@ export default {
         .map(r => targetMember.roles.remove(r!));
       await Promise.all(removals);
 
-      // Add vegan role
-      await targetMember.roles.add(veganRole);
+      // Add animal abuser role
+      await targetMember.roles.add(animalAbuserRole);
 
       // 2) Replace the deferred “thinking…” with a **public** message
       return interaction.editReply({
-        content: `🌱 ${targetMember} was blessed with the **vegan** role!`
+        content: `🤦 ${targetMember} is an **animal abuser**.`
       });
     } catch (error) {
       console.error('Role update failed:', error);
@@ -75,4 +75,5 @@ export default {
     }
   },
 };
+
 
