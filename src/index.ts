@@ -14,7 +14,7 @@ import {
 // Import your commands
 import ping from './commands/ping';
 import owoify from './commands/owoify';
-import verify from './commands/verify';
+import vegan from './commands/vegan';
 import renameChannel from './commands/rename-channel';
 import renameCategory from './commands/rename-category';
 import nonVegan from './commands/non-vegan';
@@ -52,7 +52,7 @@ async function main() {
   const commandList: Command[] = [
     ping,
     owoify,
-    verify,
+    vegan,
     renameChannel,
     renameCategory,
     nonVegan,
