@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node -r tsconfig-paths/register -r ts-node/register/transpile-only ."
+    "start": "node -r tsconfig-paths/register dist/index.js",
+    "prod": "pnpm run build && pnpm run start"
   },
   "keywords": [],
   "author": "",

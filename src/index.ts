@@ -8,132 +8,128 @@ import {
   Routes,
   Interaction,
   ChatInputCommandInteraction,
-  MessageContextMenuCommandInteraction
+  MessageContextMenuCommandInteraction,
 } from 'discord.js';
 
-// Import commands explicitly
+// Import your commands
 import ping from './commands/ping';
 import owoify from './commands/owoify';
 import verify from './commands/verify';
 import renameChannel from './commands/rename-channel';
-import { CONFIG } from './config';
 import renameCategory from './commands/rename-category';
 import nonVegan from './commands/non-vegan';
 import isolate from './commands/isolate';
 import release from './commands/release';
-import tapify from './commands/tapify'
+import tapify from './commands/tapify';
 
-// Load environment variables
-const TOKEN = CONFIG.TOKEN!;
-const APP_ID = CONFIG.APP_ID!;
+import { CONFIG } from './config';
+const { TOKEN, APP_ID } = CONFIG;
 
-// Create a more flexible Command interface to handle different interaction types
-interface Command {
-  data: {
-    name: string;
-    toJSON: () => any;
-  };
-  execute: (interaction: Interaction) => Promise<any>;
-  // Add any additional methods that might be in your commands
-  [key: string]: any;
-}
+// A command can be either a slash command or a context-menu command
+export type Command =
+  | {
+      data: { name: string; toJSON(): any };
+      execute(interaction: ChatInputCommandInteraction): Promise<any>;
+      [key: string]: any;
+    }
+  | {
+      data: { name: string; toJSON(): any };
+      execute(interaction: MessageContextMenuCommandInteraction): Promise<any>;
+      [key: string]: any;
+    };
 
 async function main() {
-  // Create client instance
   const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
       GatewayIntentBits.GuildMembers,
       GatewayIntentBits.GuildMessages,
-      GatewayIntentBits.MessageContent
-    ]
+      GatewayIntentBits.MessageContent,
+    ],
   });
 
-  // Create a new collection for commands
   const commands = new Collection<string, Command>();
+  const commandList: Command[] = [
+    ping,
+    owoify,
+    verify,
+    renameChannel,
+    renameCategory,
+    nonVegan,
+    isolate,
+    release,
+    tapify,
+  ];
 
-  // Create commands array
-  const commandList = [ping, owoify, verify, renameChannel, renameCategory, nonVegan, isolate, release, tapify];
-
-  // Register all commands
-  for (const command of commandList) {
-    if ('data' in command && 'execute' in command) {
-      commands.set(command.data.name, command);
-      console.log(`Registered command: ${command.data.name}`);
-    } else {
-      console.log(`[WARNING] A command is missing a required "data" or "execute" property.`);
-    }
+  // Register commands locally
+  for (const cmd of commandList) {
+    commands.set(cmd.data.name, cmd);
+    console.log(`Registered command: ${cmd.data.name}`);
   }
 
-  // Register slash commands with Discord
-  const rest = new REST().setToken(TOKEN);
+  // Register slash/context commands with Discord
+  const rest = new REST().setToken(TOKEN!);
   try {
     console.log('Started refreshing application commands.');
-    await rest.put(
-      Routes.applicationCommands(APP_ID),
-      { body: commandList.map(cmd => cmd.data.toJSON()) }
-    );
+    await rest.put(Routes.applicationCommands(APP_ID!), {
+      body: commandList.map((c) => c.data.toJSON()),
+    });
     console.log('Successfully reloaded application commands.');
   } catch (error) {
     console.error('Error refreshing application commands:', error);
   }
 
-  // Handle all types of interactions
-  client.on(Events.InteractionCreate, async interaction => {
-    let command;
-
+  client.on(Events.InteractionCreate, async (interaction: Interaction) => {
     if (interaction.isChatInputCommand()) {
-      command = commands.get(interaction.commandName);
-    } else if (interaction.isMessageContextMenuCommand()) {
-      command = commands.get(interaction.commandName);
-      console.log(`Context menu command triggered: ${interaction.commandName}`);
-    } else {
-      return; // Not a command we handle
-    }
-
-    if (!command) {
-      console.error(`No command matching ${interaction.commandName} was found.`);
-      return;
-    }
-
-    try {
-      await command.execute(interaction);
-    } catch (error) {
-      console.error(`Error executing ${interaction.commandName}:`, error);
-
+      const cmd = commands.get(interaction.commandName);
+      if (!cmd) {
+        console.error(`No slash command matching ${interaction.commandName}`);
+        return;
+      }
       try {
-        if (interaction.replied) {
-          await interaction.followUp({
-            content: 'There was an error executing this command!',
-            ephemeral: true
-          });
-        } else if (interaction.deferred) {
-          await interaction.editReply('There was an error executing this command!');
-        } else {
-          await interaction.reply({
-            content: 'There was an error executing this command!',
-            ephemeral: true
-          });
-        }
-      } catch (replyError) {
-        console.error('Failed to respond to interaction after error:', replyError);
+        await (cmd as { execute(i: ChatInputCommandInteraction): Promise<any> }).execute(
+          interaction
+        );
+      } catch (err) {
+        console.error(`Error executing ${interaction.commandName}:`, err);
+        const reply = interaction.replied || interaction.deferred
+          ? interaction.followUp({ content: 'There was an error executing this command!', ephemeral: true })
+          : interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
+        await reply;
+      }
+
+    } else if (interaction.isMessageContextMenuCommand()) {
+      const cmd = commands.get(interaction.commandName);
+      if (!cmd) {
+        console.error(`No context-menu command matching ${interaction.commandName}`);
+        return;
+      }
+      try {
+        await (
+          cmd as { execute(i: MessageContextMenuCommandInteraction): Promise<any> }
+        ).execute(interaction);
+      } catch (err) {
+        console.error(`Error executing ${interaction.commandName}:`, err);
+        const reply = interaction.replied || interaction.deferred
+          ? interaction.followUp({ content: 'There was an error executing this command!', ephemeral: true })
+          : interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
+        await reply;
       }
     }
   });
 
-  // Handle process errors to prevent crashes
-  process.on('unhandledRejection', (error) => {
-    console.error('Unhandled promise rejection:', error);
-  });
-
-  // Log in to Discord
-  client.on(Events.ClientReady, c => {
+  client.on(Events.ClientReady, (c) => {
     console.log(`Ready! Logged in as ${c.user.tag}`);
   });
 
-  await client.login(TOKEN);
+  process.on('unhandledRejection', (err) => {
+    console.error('Unhandled promise rejection:', err);
+  });
+
+  await client.login(TOKEN!);
 }
 
-main().catch(error => {
-  console.error('Fatal error in main process:', error);
+main().catch((err) => {
+  console.error('Fatal error in main process:', err);
 });
+

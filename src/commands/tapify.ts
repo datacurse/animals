@@ -6,7 +6,7 @@ export default {
     .setType(ApplicationCommandType.Message),
 
   async execute(interaction: MessageContextMenuCommandInteraction) {
-    await interaction.deferReply({ ephemeral: false });
+    await interaction.deferReply();
     try {
       const targetMessage = interaction.targetMessage;
       if (!targetMessage?.content) {
