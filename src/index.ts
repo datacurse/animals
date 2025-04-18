@@ -15,9 +15,10 @@ import {
 import ping from './commands/ping';
 import owoify from './commands/owoify';
 import vegan from './commands/vegan';
+import goingVegan from './commands/going-vegan';
+import animalAbuser from './commands/animal-abuser';
 import renameChannel from './commands/rename-channel';
 import renameCategory from './commands/rename-category';
-import nonVegan from './commands/non-vegan';
 import isolate from './commands/isolate';
 import release from './commands/release';
 import tapify from './commands/tapify';
@@ -53,9 +54,10 @@ async function main() {
     ping,
     owoify,
     vegan,
+    goingVegan,
+    animalAbuser,
     renameChannel,
     renameCategory,
-    nonVegan,
     isolate,
     release,
     tapify,

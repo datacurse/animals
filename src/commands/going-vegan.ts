@@ -41,24 +41,32 @@ export default {
       return interaction.editReply(`❌ Couldn't find ${target} here.`);
     }
 
-    // Find going vegan role
+    // Find roles
+    const veganRole = guild.roles.cache.find(r => r.name.toLowerCase() === 'vegan');
     const goingVeganRole = guild.roles.cache.find(r => r.name.toLowerCase() === 'going vegan');
+
     if (!goingVeganRole) {
-      return interaction.editReply('❌ No role named "animal abuser" found. Please create it first.');
+      return interaction.editReply('❌ No role named "going vegan" found. Please create it first.');
     }
 
-    // Already animal abuser?
+    // Prevent “demoting” a vegan
+    if (veganRole && targetMember.roles.cache.has(veganRole.id)) {
+      return interaction.editReply(
+        '❌ That person is already vegan. If you have any issues, please ping the moderators.'
+      );
+    }
+
+    // Already going vegan?
     if (targetMember.roles.cache.has(goingVeganRole.id)) {
       return interaction.editReply(`✅ ${targetMember} is already going vegan.`);
     }
 
     try {
-      // Remove conflicting roles
-      const removals = ['animal abuser', 'vegan']
-        .map(name => guild.roles.cache.find(r => r.name.toLowerCase() === name))
-        .filter(r => r && targetMember.roles.cache.has(r.id))
-        .map(r => targetMember.roles.remove(r!));
-      await Promise.all(removals);
+      // Remove only “animal abuser” (if present)
+      const animalAbuser = guild.roles.cache.find(r => r.name.toLowerCase() === 'animal abuser');
+      if (animalAbuser && targetMember.roles.cache.has(animalAbuser.id)) {
+        await targetMember.roles.remove(animalAbuser);
+      }
 
       // Add going vegan role
       await targetMember.roles.add(goingVeganRole);
@@ -75,6 +83,4 @@ export default {
     }
   },
 };
-
-
 
