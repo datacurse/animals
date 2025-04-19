@@ -69,7 +69,7 @@ export async function removeRoles(member: GuildMember, roleNames: string[]) {
   }
 }
 
-export async function checkPermission(member: GuildMember,  roleName: string) {
+export function checkPermission(member: GuildMember,  roleName: string) {
   if (hasRole(member, roleName) || isDev(member)) return
   throw new Error(`You need the ${roleName} role to run this.`);
 }
