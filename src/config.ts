@@ -7,3 +7,10 @@ export const CONFIG = {
   GUILD_ID: process.env.GUILD_ID!,
   MUTED_ROLE: 'muted'
 };
+
+export const ROLES = {
+  vegan: 'vegan',
+  goingVegan: 'going vegan',
+  notVeganYet: 'not vegan (yet)',
+  verifier: 'verifier'
+};

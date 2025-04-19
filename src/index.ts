@@ -16,7 +16,6 @@ import ping from './commands/ping';
 import owoify from './commands/owoify';
 import vegan from './commands/vegan';
 import goingVegan from './commands/going-vegan';
-import animalAbuser from './commands/animal-abuser';
 import renameChannel from './commands/rename-channel';
 import renameCategory from './commands/rename-category';
 import isolate from './commands/isolate';
@@ -24,6 +23,7 @@ import release from './commands/release';
 import tapify from './commands/tapify';
 
 import { CONFIG } from './config';
+import notVeganYet from './commands/not-vegan-yet';
 const { TOKEN, APP_ID } = CONFIG;
 
 // A command can be either a slash command or a context-menu command
@@ -55,7 +55,7 @@ async function main() {
     owoify,
     vegan,
     goingVegan,
-    animalAbuser,
+    notVeganYet,
     renameChannel,
     renameCategory,
     isolate,
