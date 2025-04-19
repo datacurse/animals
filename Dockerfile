@@ -12,5 +12,5 @@ RUN pnpm install
 
 COPY src/ ./src/
 
-CMD ["pnpm", "run", "prod"]
+CMD ["pnpm", "run", "dev"]
 

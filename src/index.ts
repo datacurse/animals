@@ -37,7 +37,7 @@ async function main() {
   for (const category of readdirSync(commandsPath)) {
     const categoryPath = join(commandsPath, category);
     for (const file of readdirSync(categoryPath)) {
-      if (!'.ts'.includes(extname(file))) continue;
+      if (!['.js', '.ts'].includes(extname(file))) continue;
       const { default: cmd } = await import(join(categoryPath, file));
       client.commands.set(cmd.data.name, cmd as Command);
       console.log(`Loaded ${cmd.data.name}`);
