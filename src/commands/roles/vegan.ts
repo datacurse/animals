@@ -10,10 +10,10 @@ const REMOVE = [ROLES.notVeganYet, ROLES.goingVegan];
 export default {
   data: new SlashCommandBuilder()
     .setName(COMMAND_NAME)
-    .setDescription(`Gives ${ROLE} role to a target user`)
+    .setDescription(`Give ${ROLE}`)
     .addUserOption(opt => opt
       .setName('target')
-      .setDescription(`Target user to verify as ${ROLE}`)
+      .setDescription(`Who to mark as ${ROLE}`)
       .setRequired(true)
     ),
   async execute(i: ChatInputCommandInteraction) {
@@ -26,9 +26,9 @@ export default {
       ckeckRedundancy(targetMember, ROLE);
       await removeRoles(targetMember, REMOVE);
       await addRole(targetMember, getRole(guild, ROLE));
-      await i.editReply(`🌱 ${targetMember} was blessed with the ${ROLE} role!`);
+      return i.followUp(`🌱 ${targetMember} was blessed with the ${ROLE} role!`);
     } catch (error) {
-      await i.editReply(`❌ ${error instanceof Error ? error.message : error}`);
+      return i.followUp(`❌ ${error instanceof Error ? error.message : error}`);
     }
   }
 };

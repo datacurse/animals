@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import { readdirSync } from 'node:fs';
+import { join, extname } from 'node:path';
 import {
   Client,
   Collection,
@@ -6,40 +8,21 @@ import {
   GatewayIntentBits,
   REST,
   Routes,
-  Interaction,
   ChatInputCommandInteraction,
   MessageContextMenuCommandInteraction,
 } from 'discord.js';
-
-// Import your commands
-import ping from './commands/ping';
-import owoify from './commands/owoify';
-import vegan from './commands/vegan';
-import goingVegan from './commands/going-vegan';
-import renameChannel from './commands/rename-channel';
-import renameCategory from './commands/rename-category';
-import isolate from './commands/isolate';
-import release from './commands/release';
-import tapify from './commands/tapify';
-
 import { CONFIG } from './config';
-import notVeganYet from './commands/not-vegan-yet';
-const { TOKEN, APP_ID } = CONFIG;
 
-// A command can be either a slash command or a context-menu command
-export type Command =
-  | {
-      data: { name: string; toJSON(): any };
-      execute(interaction: ChatInputCommandInteraction): Promise<any>;
-      [key: string]: any;
-    }
-  | {
-      data: { name: string; toJSON(): any };
-      execute(interaction: MessageContextMenuCommandInteraction): Promise<any>;
-      [key: string]: any;
-    };
+type Command = {
+  data: { name: string; toJSON(): any };
+  execute(
+    interaction: ChatInputCommandInteraction | MessageContextMenuCommandInteraction
+  ): Promise<any>;
+};
 
 async function main() {
+  const { TOKEN, APP_ID } = CONFIG;
+
   const client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
@@ -47,91 +30,57 @@ async function main() {
       GatewayIntentBits.GuildMessages,
       GatewayIntentBits.MessageContent,
     ],
-  });
+  }) as Client & { commands: Collection<string, Command> };
+  client.commands = new Collection();
 
-  const commands = new Collection<string, Command>();
-  const commandList: Command[] = [
-    ping,
-    owoify,
-    vegan,
-    goingVegan,
-    notVeganYet,
-    renameChannel,
-    renameCategory,
-    isolate,
-    release,
-    tapify,
-  ];
-
-  // Register commands locally
-  for (const cmd of commandList) {
-    commands.set(cmd.data.name, cmd);
-    console.log(`Registered command: ${cmd.data.name}`);
-  }
-
-  // Register slash/context commands with Discord
-  const rest = new REST().setToken(TOKEN!);
-  try {
-    console.log('Started refreshing application commands.');
-    await rest.put(Routes.applicationCommands(APP_ID!), {
-      body: commandList.map((c) => c.data.toJSON()),
-    });
-    console.log('Successfully reloaded application commands.');
-  } catch (error) {
-    console.error('Error refreshing application commands:', error);
-  }
-
-  client.on(Events.InteractionCreate, async (interaction: Interaction) => {
-    if (interaction.isChatInputCommand()) {
-      const cmd = commands.get(interaction.commandName);
-      if (!cmd) {
-        console.error(`No slash command matching ${interaction.commandName}`);
-        return;
-      }
-      try {
-        await (cmd as { execute(i: ChatInputCommandInteraction): Promise<any> }).execute(
-          interaction
-        );
-      } catch (err) {
-        console.error(`Error executing ${interaction.commandName}:`, err);
-        const reply = interaction.replied || interaction.deferred
-          ? interaction.followUp({ content: 'There was an error executing this command!', ephemeral: true })
-          : interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
-        await reply;
-      }
-
-    } else if (interaction.isMessageContextMenuCommand()) {
-      const cmd = commands.get(interaction.commandName);
-      if (!cmd) {
-        console.error(`No context-menu command matching ${interaction.commandName}`);
-        return;
-      }
-      try {
-        await (
-          cmd as { execute(i: MessageContextMenuCommandInteraction): Promise<any> }
-        ).execute(interaction);
-      } catch (err) {
-        console.error(`Error executing ${interaction.commandName}:`, err);
-        const reply = interaction.replied || interaction.deferred
-          ? interaction.followUp({ content: 'There was an error executing this command!', ephemeral: true })
-          : interaction.reply({ content: 'There was an error executing this command!', ephemeral: true });
-        await reply;
-      }
+  const commandsPath = join(__dirname, 'commands');
+  for (const category of readdirSync(commandsPath)) {
+    const categoryPath = join(commandsPath, category);
+    for (const file of readdirSync(categoryPath)) {
+      if (!'.ts'.includes(extname(file))) continue;
+      const { default: cmd } = await import(join(categoryPath, file));
+      client.commands.set(cmd.data.name, cmd as Command);
+      console.log(`Loaded ${cmd.data.name}`);
     }
-  });
+  }
 
-  client.on(Events.ClientReady, (c) => {
-    console.log(`Ready! Logged in as ${c.user.tag}`);
-  });
+  const rest = new REST().setToken(TOKEN);
+  try {
+    console.log('Refreshing application commands…');
+    await rest.put(Routes.applicationCommands(APP_ID), {
+      body: client.commands.map(c => c.data.toJSON()),
+    });
+    console.log('✅ Commands synced.');
+  } catch (err) {
+    console.error('Failed to sync commands:', err);
+  }
 
-  process.on('unhandledRejection', (err) => {
-    console.error('Unhandled promise rejection:', err);
-  });
+client.on(Events.InteractionCreate, async interaction => {
+  if (
+    !interaction.isChatInputCommand() &&
+    !interaction.isMessageContextMenuCommand()
+  ) return;
 
-  await client.login(TOKEN!);
+  const command = client.commands.get(interaction.commandName);
+  if (!command) return;
+
+  try {
+    await command.execute(interaction);
+  } catch (err) {
+    console.error(`Error executing ${interaction.commandName}:`, err);
+  }
+});
+
+  client.once(Events.ClientReady, () =>
+    console.log(`Logged in as ${client.user!.tag}`)
+  );
+  process.on('unhandledRejection', console.error);
+
+  await client.login(TOKEN);
 }
 
-main().catch((err) => {
-  console.error('Fatal error in main process:', err);
+main().catch(err => {
+  console.error('Fatal error starting bot:', err);
+  process.exit(1);
 });
 
